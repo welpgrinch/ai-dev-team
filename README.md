@@ -21,7 +21,7 @@ USER → COLLABORATOR → IDEA REFINER ↔ RESEARCH → COLLABORATOR REVIEW
 **From the Marketplace** — search for *AI Dev Team* in the Extensions view (`Ctrl+Shift+X`), or run:
 
 ```bash
-code --install-extension weeoo.ai-dev-team
+code --install-extension welpgrinch.ai-dev-team
 ```
 
 **From a `.vsix` file** (any computer, no Marketplace needed) — download `ai-dev-team-<version>.vsix` from the

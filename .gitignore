@@ -4,3 +4,6 @@ out/
 media/mermaid.min.js
 *.vsix
 .aidevteam/
+
+artist-portfolio/
+docs/architecture/

@@ -133,12 +133,6 @@ npm run package     # -> ai-dev-team-<version>.vsix (installable on any machine,
 npm run publish     # publish to the Marketplace (needs a publisher + Personal Access Token, see below)
 ```
 
-To publish to the Marketplace once:
-
-1. Create a publisher named `weeoo` at <https://marketplace.visualstudio.com/manage> (or change `publisher` in `package.json`).
-2. Create an Azure DevOps Personal Access Token with the **Marketplace › Manage** scope and run `npx @vscode/vsce login weeoo`.
-3. Bump `version` in `package.json`, add a `CHANGELOG.md` entry, commit, and run `npm run publish` — or push a tag `vX.Y.Z`: the [release workflow](.github/workflows/release.yml) packages, publishes (using the repository secret `VSCE_PAT`) and attaches the `.vsix` to a GitHub release.
-
 ## License
 
 [MIT](LICENSE)

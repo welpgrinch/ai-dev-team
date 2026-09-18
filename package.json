@@ -1,0 +1,175 @@
+{
+  "name": "ai-dev-team",
+  "displayName": "AI Dev Team",
+  "description": "An AI-powered software development organization inside VS Code: Collaborator, Idea Refiner, Research, Architect, Prompt Engineer, Coder, Tester, Debugger and Summarizer agents.",
+  "version": "0.1.0",
+  "publisher": "weeoo",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1f2430",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/welpgrinch/ai-dev-team.git"
+  },
+  "bugs": {
+    "url": "https://github.com/welpgrinch/ai-dev-team/issues"
+  },
+  "homepage": "https://github.com/welpgrinch/ai-dev-team#readme",
+  "keywords": [
+    "ai",
+    "agents",
+    "copilot",
+    "chat-participant",
+    "architecture",
+    "code-generation",
+    "multi-agent"
+  ],
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "extensionDependencies": [
+    "github.copilot-chat"
+  ],
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "ai-dev-team.devteam",
+        "fullName": "AI Dev Team",
+        "name": "devteam",
+        "description": "Describe your idea; the AI team refines, researches, architects, builds, tests and documents it.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "idea",
+            "description": "Start a new project from an idea"
+          },
+          {
+            "name": "approve",
+            "description": "Approve the current requirements or architecture"
+          },
+          {
+            "name": "revise",
+            "description": "Request changes to the current requirements or architecture"
+          },
+          {
+            "name": "build",
+            "description": "Run the next development segment (Prompt Engineer → Coder → Tester → Debugger)"
+          },
+          {
+            "name": "architecture",
+            "description": "Regenerate the architecture PDF from the current version"
+          },
+          {
+            "name": "status",
+            "description": "Show project phase, roadmap and session statistics"
+          },
+          {
+            "name": "models",
+            "description": "Show which language model each agent uses and which models are available"
+          },
+          {
+            "name": "end",
+            "description": "End the development session and write a new Development Chapter"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "aiDevTeam.openArchitecture",
+        "title": "AI Dev Team: Open Architecture PDF"
+      },
+      {
+        "command": "aiDevTeam.openActivityLog",
+        "title": "AI Dev Team: Open Activity Log"
+      },
+      {
+        "command": "aiDevTeam.openProjectMemory",
+        "title": "AI Dev Team: Open Project Memory"
+      },
+      {
+        "command": "aiDevTeam.showOutput",
+        "title": "AI Dev Team: Show Live Activity Output"
+      },
+      {
+        "command": "aiDevTeam.showModels",
+        "title": "AI Dev Team: Show Model Assignment"
+      }
+    ],
+    "configuration": {
+      "title": "AI Dev Team",
+      "properties": {
+        "aiDevTeam.maxDebugCycles": {
+          "type": "number",
+          "default": 3,
+          "description": "Maximum Tester → Debugger → Tester cycles per development segment before the segment is marked blocked."
+        },
+        "aiDevTeam.allowCommands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow the Coder, Tester and Debugger agents to execute terminal commands in the workspace."
+        },
+        "aiDevTeam.commandTimeoutSeconds": {
+          "type": "number",
+          "default": 180,
+          "description": "Timeout for commands executed by agents."
+        },
+        "aiDevTeam.maxToolRounds": {
+          "type": "number",
+          "default": 40,
+          "description": "Maximum tool-call rounds an agent may perform in a single task."
+        },
+        "aiDevTeam.assignModelsPerAgent": {
+          "type": "boolean",
+          "default": true,
+          "description": "Give each agent the language model best suited to its job: frontier models (Claude Fable, GPT Astrea) first for design, coding, testing and debugging, a fast model for the Summarizer. When disabled, every agent uses the model selected in the chat model picker."
+        },
+        "aiDevTeam.models": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Override the model preference per agent. Each value is an ordered list of case-insensitive fragments matched against the model id, family and name (e.g. `[\"fable\", \"astrea\"]`); the newest available model matching the first fragment wins. Roles without an entry use the built-in defaults; if nothing matches, the chat model picker's model is used. Run `@devteam /models` to see the available models and the current assignment.",
+          "additionalProperties": false,
+          "properties": {
+            "collaborator": { "type": "array", "items": { "type": "string" } },
+            "idea-refiner": { "type": "array", "items": { "type": "string" } },
+            "research": { "type": "array", "items": { "type": "string" } },
+            "architect": { "type": "array", "items": { "type": "string" } },
+            "prompt-engineer": { "type": "array", "items": { "type": "string" } },
+            "coder": { "type": "array", "items": { "type": "string" } },
+            "tester": { "type": "array", "items": { "type": "string" } },
+            "debugger": { "type": "array", "items": { "type": "string" } },
+            "summarizer": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./ && node scripts/copy-assets.js && node scripts/make-icon.js",
+    "watch": "tsc -watch -p ./",
+    "package": "npx --yes @vscode/vsce package",
+    "publish": "npx --yes @vscode/vsce publish"
+  },
+  "dependencies": {
+    "pdfkit": "^0.15.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/pdfkit": "^0.13.5",
+    "@types/vscode": "^1.95.0",
+    "mermaid": "^11.4.1",
+    "typescript": "^5.6.3"
+  }
+}

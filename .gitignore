@@ -1,0 +1,6 @@
+node_modules/
+out/
+# copied from node_modules by scripts/copy-assets.js during compile
+media/mermaid.min.js
+*.vsix
+.aidevteam/

@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "npm: compile",
+      "command": "npm run compile",
+      "windows": { "command": "npm.cmd run compile" },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "type": "shell",
+      "label": "npm: watch",
+      "command": "npm run watch",
+      "windows": { "command": "npm.cmd run watch" },
+      "isBackground": true,
+      "problemMatcher": "$tsc-watch"
+    }
+  ]
+}

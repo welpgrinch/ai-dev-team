@@ -69,3 +69,44 @@ export const ARCHITECTURE_SECTIONS: string[][] = [
     'Assumptions and limitations',
   ],
 ];
+
+/** Compact single-part plan for simple projects (static sites, small scripts): one LM call, only relevant sections. */
+export const ARCHITECTURE_SECTIONS_SIMPLE: string[][] = [
+  [
+    'Project overview',
+    'Requirements',
+    'System architecture',
+    'Technology stack',
+    'Folder/project structure',
+    'Testing strategy',
+    'Implementation roadmap',
+    'Architecture decisions',
+    'Assumptions and limitations',
+  ],
+];
+
+/** Two-part plan for standard projects: skips sections that rarely apply (drop irrelevant ones with a one-line note). */
+export const ARCHITECTURE_SECTIONS_STANDARD: string[][] = [
+  [
+    'Project overview',
+    'Requirements',
+    'System architecture',
+    'Architecture diagrams',
+    'Technology stack',
+    'Folder/project structure',
+    'Frontend architecture',
+    'Backend architecture',
+    'Database architecture',
+    'API architecture',
+  ],
+  [
+    'Security architecture',
+    'Deployment architecture',
+    'Testing strategy',
+    'Error-handling strategy',
+    'Development phases',
+    'Implementation roadmap',
+    'Architecture decisions',
+    'Assumptions and limitations',
+  ],
+];

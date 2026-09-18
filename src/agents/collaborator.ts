@@ -127,8 +127,8 @@ export class Collaborator extends BaseAgent {
         }
         return;
       case 'developing':
-        if (isApproval(text) || /^\s*(build|run)\b/i.test(text)) {
-          await this.runNextSegment(ctx);
+        if (isApproval(text) || /^\s*[/]?(build|run)\b/i.test(text)) {
+          await this.runNextSegment(ctx, /\b(all|everything|rest|remaining)\b/i.test(text));
         } else {
           await this.answer(text, ctx);
         }
@@ -166,7 +166,7 @@ export class Collaborator extends BaseAgent {
       case 'awaiting-architecture-approval':
         return this.approveArchitecture(ctx);
       case 'developing':
-        return this.runNextSegment(ctx);
+        return this.runNextSegment(ctx, /\b(all|everything|rest|remaining)\b/i.test(prompt));
       default:
         this.say(ctx, `Nothing is waiting for approval (phase: \`${this.m.phase}\`).`);
     }
@@ -197,7 +197,7 @@ export class Collaborator extends BaseAgent {
       '1. Describe your idea (or `/idea <idea>`) → the **Idea Refiner** and **Research** agents produce a refined concept.',
       '2. Answer the open questions or `/approve` → the **Summarizer** briefs the **Architect**, which produces the architecture document and PDF.',
       '3. `/approve` the architecture (or `/revise <feedback>`) → development starts.',
-      '4. `/build` runs the next segment: **Prompt Engineer → Coder → Tester → (Debugger → Tester)**.',
+      '4. `/build` runs the next segment: **Prompt Engineer → Coder → Tester → (Debugger → Tester)**. `/build all` runs every remaining segment back-to-back without waiting for you.',
       '5. `/end` closes the session and the **Summarizer** writes a new Development Chapter.',
       '',
       'Use `/status` at any time and `/models` to see which language model each agent uses. Everything is recorded in `.aidevteam/` (memory, logs, architecture versions, tasks, chapters).',
@@ -259,6 +259,7 @@ export class Collaborator extends BaseAgent {
     }
 
     m.projectName = concept.projectName?.trim() || m.projectName || 'Untitled Project';
+    m.complexity = concept.complexity;
     m.refinedRequirements = concept.markdown;
     m.openQuestions = concept.openQuestions;
     m.research = research;
@@ -291,13 +292,19 @@ export class Collaborator extends BaseAgent {
     m.phase = 'architecting';
     this.save();
     this.s.log.append('approval', 'collaborator', 'Requirements approved by user; starting architecture phase');
-    this.say(ctx, `Requirements approved. The **Summarizer** is briefing the **Architect** now — this takes a few minutes (document + diagrams + PDF).`);
-
-    this.s.log.handoff('collaborator', 'summarizer', 'Create requirements summary for the Architect');
     const review = m.openQuestions.length ? `Open questions the user did not answer (proceed with stated assumptions):\n- ${m.openQuestions.join('\n- ')}` : 'No open questions.';
-    m.requirementsSummary = await this.s.agents.summarizer.summarizeRequirements(ctx, m.refinedRequirements, m.research, review);
+    if (m.complexity === 'simple') {
+      // Requirements are already short for simple projects; a separate summarization pass adds cost without value.
+      this.say(ctx, `Requirements approved. This is a **simple** project, so the requirements go straight to the **Architect** (compact document, no PDF until approval).`);
+      this.s.log.append('decision', 'collaborator', 'Simple project: skipping Summarizer briefing, requirements passed directly to Architect');
+      m.requirementsSummary = `${m.refinedRequirements}\n\n${review}`;
+    } else {
+      this.say(ctx, `Requirements approved. The **Summarizer** is briefing the **Architect** now.`);
+      this.s.log.handoff('collaborator', 'summarizer', 'Create requirements summary for the Architect');
+      m.requirementsSummary = await this.s.agents.summarizer.summarizeRequirements(ctx, m.refinedRequirements, m.research, review);
+      this.s.log.handoff('summarizer', 'collaborator', 'Requirements summary delivered');
+    }
     this.save();
-    this.s.log.handoff('summarizer', 'collaborator', 'Requirements summary delivered');
     this.s.log.handoff('collaborator', 'architect', 'Design the architecture from the requirements summary');
     await this.produceArchitecture(ctx, undefined);
   }
@@ -330,6 +337,7 @@ export class Collaborator extends BaseAgent {
       refinedRequirements: m.refinedRequirements,
       research: m.research,
       memoryContext: this.s.memory.toPromptContext(),
+      complexity: m.complexity,
       currentDocument: feedback ? this.currentArchitectureMarkdown() : undefined,
       feedback,
       nextVersion,
@@ -350,7 +358,6 @@ export class Collaborator extends BaseAgent {
     this.save();
     this.s.log.append('architecture-version', 'architect', `Architecture v${nextVersion} created`, { version: nextVersion, changelog: version.changelog });
 
-    const pdfInfo = await this.renderPdf(ctx, version, 'Draft');
     this.s.log.handoff('architect', 'collaborator', `Architecture v${nextVersion} delivered for review`);
 
     const review = await this.review(ctx, 'architecture document', markdown, m.requirementsSummary);
@@ -358,7 +365,7 @@ export class Collaborator extends BaseAgent {
     this.save();
 
     this.say(ctx, `## Architecture v${nextVersion} — ${version.changelog}`);
-    this.say(ctx, pdfInfo);
+    this.say(ctx, '_The PDF is generated when you approve the architecture — review the Markdown draft below._');
     this.say(ctx, this.roadmapTable());
     if (review.notes.length) {
       this.say(ctx, `### Collaborator review\n${review.notes.map((n) => `- ${n}`).join('\n')}\n\n_Recommendation: **${review.decision === 'forward' ? 'approve' : 'revise'}**._`);
@@ -468,7 +475,7 @@ export class Collaborator extends BaseAgent {
     const info = await this.renderPdf(ctx, v, 'Approved');
     this.say(ctx, `Architecture **v${v.version}** is approved and is now the official technical blueprint. ${info}`);
     this.say(ctx, this.roadmapTable());
-    this.say(ctx, 'Run `/build` to start the first development segment.');
+    this.say(ctx, 'Run `/build` to start the first development segment — or `/build all` to build every segment in one go (I only stop if a segment gets blocked).');
   }
 
   private roadmapTable(): string {
@@ -497,17 +504,38 @@ export class Collaborator extends BaseAgent {
     });
   }
 
-  async runNextSegment(ctx: AgentContext): Promise<void> {
+  async runNextSegment(ctx: AgentContext, all = false): Promise<void> {
+    let built = 0;
+    for (;;) {
+      const outcome = await this.runOneSegment(ctx);
+      if (outcome === 'passed') {
+        built++;
+      }
+      if (!all || outcome !== 'passed' || ctx.token.isCancellationRequested) {
+        break;
+      }
+      const remaining = this.m.roadmap.filter((r) => r.status === 'pending' || r.status === 'in-progress').length;
+      if (!remaining) {
+        break;
+      }
+      this.say(ctx, `---\n\nContinuing automatically — ${remaining} segment(s) remaining.`);
+    }
+    if (all && built > 1) {
+      this.say(ctx, `**Collaborator:** batch build finished — ${built} segment(s) completed. ${this.m.roadmap.every((r) => r.status === 'done') ? 'The roadmap is complete; run `/end` to write the development chapter.' : ''}`);
+    }
+  }
+
+  private async runOneSegment(ctx: AgentContext): Promise<'passed' | 'blocked' | 'idle'> {
     const m = this.m;
     if (m.phase !== 'developing') {
       this.say(ctx, `Development has not started yet (phase: \`${m.phase}\`). ${m.phase === 'awaiting-architecture-approval' ? 'Approve the architecture first.' : ''}`);
-      return;
+      return 'idle';
     }
     const item = m.roadmap.find((r) => r.status === 'in-progress') ?? m.roadmap.find((r) => r.status === 'pending');
     if (!item) {
       const blocked = m.roadmap.filter((r) => r.status === 'blocked');
       this.say(ctx, blocked.length ? `All remaining segments are blocked: ${blocked.map((b) => b.title).join(', ')}. Use \`/revise <feedback>\` to escalate to the Architect, or retry with \`/build ${blocked[0].id}\`.` : 'All roadmap segments are complete. Run `/end` to write the development chapter.');
-      return;
+      return 'idle';
     }
     const settings = this.s.settings();
     const architecture = this.currentArchitectureMarkdown();
@@ -575,7 +603,8 @@ export class Collaborator extends BaseAgent {
 
     // Collaborator decision
     this.s.log.handoff('tester', 'collaborator', `Segment ${task.id} ${tested.result.status}`, { segmentId, task: task.id });
-    if (tested.result.status === 'pass') {
+    const passed = tested.result.status === 'pass';
+    if (passed) {
       item.status = 'done';
       if (!m.completedFeatures.includes(item.title)) {
         m.completedFeatures.push(item.title);
@@ -595,6 +624,7 @@ export class Collaborator extends BaseAgent {
     m.implementationStatus = `${m.roadmap.filter((r) => r.status === 'done').length}/${m.roadmap.length} segments complete`;
     this.save();
     this.say(ctx, this.roadmapTable());
+    return passed ? 'passed' : 'blocked';
   }
 
   private logTest(result: TestResult, segmentId: string, task: CodingTask): void {
@@ -719,8 +749,8 @@ export class Collaborator extends BaseAgent {
       ctx,
       [
         `# Original idea from the user\n${this.m.originalIdea}`,
-        `# ${subject} to review\n${truncate(content, 40_000)}`,
-        supporting ? `# Supporting material\n${truncate(supporting, 15_000)}` : '',
+        `# ${subject} to review\n${truncate(content, 20_000)}`,
+        supporting ? `# Supporting material\n${truncate(supporting, 8_000)}` : '',
         `Review the ${subject}: does it stay true to the user's idea, is it complete, consistent and realistic? Give 3–7 short review notes (strengths may be included but focus on gaps), then the decision JSON. Choose "revise" only for substantial problems.`,
       ]
         .filter(Boolean)

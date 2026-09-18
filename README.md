@@ -39,9 +39,9 @@ Open the folder your new project should live in (File → Open Folder — an emp
 | Step | What to type | What happens |
 |---|---|---|
 | 1 | `@devteam A web app that …` (or `/idea …`) | Idea Refiner structures the idea, Research verifies facts, Collaborator reviews. |
-| 2 | Answer the open questions, or `/approve` | Summarizer briefs the Architect → architecture Markdown, diagrams and PDF (`docs/architecture/*.pdf`). |
-| 3 | `/approve` or `/revise <feedback>` | Approved version becomes the official blueprint; roadmap of development segments is created. |
-| 4 | `/build` | Prompt Engineer → Coder → Tester → (Debugger → Tester)* → Collaborator approval for one segment. Repeat. |
+| 2 | Answer the open questions, or `/approve` | The Architect gets a brief sized to the project (simple ideas skip research and the Summarizer pass) and writes the architecture document — compact for simple projects, full-depth for complex ones. |
+| 3 | `/approve` or `/revise <feedback>` | Approved version becomes the official blueprint and the PDF is generated (`docs/architecture/*.pdf`); roadmap of development segments is created. |
+| 4 | `/build` | Prompt Engineer → Coder → Tester → (Debugger → Tester)* → Collaborator approval for one segment. `/build all` builds every remaining segment back-to-back and only stops if one gets blocked. |
 | 5 | `/status` | Phase, roadmap, live session statistics. |
 | 6 | `/models` | Which language model each agent uses, and every model VS Code exposes. |
 | 7 | `/end` | Summarizer writes `Chapter NN` with narrative, statistics, AI activity timeline and terminal activity. |

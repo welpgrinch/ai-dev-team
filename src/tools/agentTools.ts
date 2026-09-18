@@ -230,7 +230,9 @@ export function createWorkspaceTools(o: ToolOptions): AgentTool[] {
       definition: {
         name: 'run_command',
         description:
-          'Run a shell command in the workspace root (Windows: cmd.exe; otherwise /bin/sh). Use for installing dependencies, building, running tests, git. Returns exit code and combined output. Never run interactive or long-lived commands (servers, watchers).',
+          process.platform === 'win32'
+            ? 'Run a shell command in the workspace root via Windows cmd.exe. Unix tools (grep, sed, awk, wc, mktemp, $(…)) are unavailable — use node -e "…" for scripted checks. Use for installing dependencies, building, running tests, git. Returns exit code and combined output. Never run interactive or long-lived commands (servers, watchers).'
+            : 'Run a shell command in the workspace root via /bin/sh. Use for installing dependencies, building, running tests, git. Returns exit code and combined output. Never run interactive or long-lived commands (servers, watchers).',
         inputSchema: {
           type: 'object',
           properties: {

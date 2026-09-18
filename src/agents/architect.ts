@@ -1,7 +1,7 @@
-import { ARCHITECTURE_SECTIONS } from '../docs/documentGuidelines';
+import { ARCHITECTURE_SECTIONS, ARCHITECTURE_SECTIONS_SIMPLE, ARCHITECTURE_SECTIONS_STANDARD } from '../docs/documentGuidelines';
 import { AgentContext, asStringArray, BaseAgent, extractLastJson, stripLastJsonBlock, truncate } from './base';
 import { ARCHITECT_META_INSTRUCTIONS, ARCHITECT_PROMPT } from './prompts';
-import { ArchitectureMeta, RoadmapItem } from './types';
+import { ArchitectureMeta, ProjectComplexity, RoadmapItem } from './types';
 
 export interface ArchitectInput {
   projectName: string;
@@ -9,6 +9,7 @@ export interface ArchitectInput {
   refinedRequirements: string;
   research: string;
   memoryContext: string;
+  complexity: ProjectComplexity;
   /** Present when revising an existing version. */
   currentDocument?: string;
   feedback?: string;
@@ -43,14 +44,15 @@ export class ArchitectAgent extends BaseAgent {
     }
 
     const produced: string[] = [];
-    for (let i = 0; i < ARCHITECTURE_SECTIONS.length; i++) {
-      const sections = ARCHITECTURE_SECTIONS[i];
-      const isLast = i === ARCHITECTURE_SECTIONS.length - 1;
-      this.progress(ctx, `writing part ${i + 1}/${ARCHITECTURE_SECTIONS.length} (${sections[0]} … ${sections[sections.length - 1]})`);
+    const plan = input.complexity === 'simple' ? ARCHITECTURE_SECTIONS_SIMPLE : input.complexity === 'complex' ? ARCHITECTURE_SECTIONS : ARCHITECTURE_SECTIONS_STANDARD;
+    for (let i = 0; i < plan.length; i++) {
+      const sections = plan[i];
+      const isLast = i === plan.length - 1;
+      this.progress(ctx, `writing part ${i + 1}/${plan.length} (${sections[0]} … ${sections[sections.length - 1]})`);
       const prompt = [
         ...context,
-        produced.length ? `# Already written parts (for consistency — do not repeat)\n${truncate(produced.join('\n\n'), 40_000)}` : '',
-        `# Your task now\nWrite part ${i + 1} of ${ARCHITECTURE_SECTIONS.length} of the architecture document version ${input.nextVersion}, containing exactly these top-level "##" sections in this order:\n${sections.map((s) => `- ${s}`).join('\n')}`,
+        produced.length ? `# Already written parts (for consistency — do not repeat)\n${truncate(produced.join('\n\n'), 25_000)}` : '',
+        `# Your task now\nWrite part ${i + 1} of ${plan.length} of the architecture document version ${input.nextVersion}, containing exactly these top-level "##" sections in this order:\n${sections.map((s) => `- ${s}`).join('\n')}\nIf a section does not apply to this project (e.g. "Database architecture" for a static site), keep it to a single sentence stating why.`,
         isLast ? ARCHITECT_META_INSTRUCTIONS : 'Do not append any JSON block in this part.',
       ]
         .filter(Boolean)

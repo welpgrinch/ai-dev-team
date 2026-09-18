@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ArchitectureVersion, Phase, RoadmapItem } from '../agents/types';
+import { ArchitectureVersion, Phase, ProjectComplexity, RoadmapItem } from '../agents/types';
 
 export interface ChapterRecord {
   chapter: number;
@@ -16,6 +16,7 @@ export interface ProjectMemory {
   createdAt: string;
   updatedAt: string;
   phase: Phase;
+  complexity: ProjectComplexity;
   sessionCount: number;
   originalIdea: string;
   refinedRequirements: string;
@@ -47,6 +48,7 @@ function emptyMemory(): ProjectMemory {
     createdAt: now,
     updatedAt: now,
     phase: 'idle',
+    complexity: 'standard',
     sessionCount: 0,
     originalIdea: '',
     refinedRequirements: '',

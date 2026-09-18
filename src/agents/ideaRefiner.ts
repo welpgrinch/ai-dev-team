@@ -11,6 +11,7 @@ export interface RefineInput {
 
 interface RefinerJson {
   projectName?: string;
+  complexity?: string;
   openQuestions?: unknown;
   researchRequests?: unknown;
 }
@@ -39,9 +40,11 @@ export class IdeaRefinerAgent extends BaseAgent {
       projectName: json?.projectName,
       openQuestions: asStringArray(json?.openQuestions),
       researchRequests: input.research ? [] : asStringArray(json?.researchRequests),
+      complexity: json?.complexity === 'simple' || json?.complexity === 'complex' ? json.complexity : 'standard',
     };
-    ctx.log.append('agent-output', this.role, `Refined concept (${concept.openQuestions.length} open questions, ${concept.researchRequests.length} research requests)`, {
+    ctx.log.append('agent-output', this.role, `Refined concept (${concept.complexity}, ${concept.openQuestions.length} open questions, ${concept.researchRequests.length} research requests)`, {
       projectName: concept.projectName,
+      complexity: concept.complexity,
       openQuestions: concept.openQuestions,
       researchRequests: concept.researchRequests,
     });

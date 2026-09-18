@@ -21,11 +21,14 @@ export type Phase =
   | 'awaiting-architecture-approval'
   | 'developing';
 
+export type ProjectComplexity = 'simple' | 'standard' | 'complex';
+
 export interface RefinedConcept {
   markdown: string;
   projectName?: string;
   openQuestions: string[];
   researchRequests: string[];
+  complexity: ProjectComplexity;
 }
 
 export interface ArchitectureMeta {

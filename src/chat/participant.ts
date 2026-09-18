@@ -29,7 +29,7 @@ export function registerParticipant(services: TeamServices, collaborator: Collab
           await collaborator.handleRevise(request.prompt, ctx);
           break;
         case 'build':
-          await collaborator.runNextSegment(ctx);
+          await collaborator.runNextSegment(ctx, /\b(all|everything|rest|remaining)\b/i.test(request.prompt));
           break;
         case 'architecture':
           await collaborator.regeneratePdf(ctx);
@@ -86,6 +86,7 @@ export function registerParticipant(services: TeamServices, collaborator: Collab
           const list: vscode.ChatFollowup[] = [];
           if (next) {
             list.push({ prompt: '', label: `Build ${next.id} — ${next.title}`, command: 'build' });
+            list.push({ prompt: 'all', label: 'Build all remaining segments', command: 'build' });
           }
           list.push({ prompt: '', label: 'Show status', command: 'status' }, { prompt: '', label: 'End session → write chapter', command: 'end' });
           return list;

@@ -19,7 +19,7 @@ export class PromptEngineerAgent extends BaseAgent {
   async createTask(ctx: AgentContext, input: TaskInput): Promise<{ markdown: string; task: CodingTask }> {
     this.progress(ctx, `writing coding task for ${input.item.id} — ${input.item.title}…`);
     const prompt = [
-      `# Approved architecture (v${input.architectureVersion})\n${truncate(input.architecture, 60_000)}`,
+      `# Approved architecture (v${input.architectureVersion})\n${truncate(input.architecture, 35_000)}`,
       `# Project memory\n${truncate(input.memoryContext, 8_000)}`,
       input.previousReports ? `# Reports from previous segments\n${truncate(input.previousReports, 8_000)}` : '',
       `# Roadmap segment to convert into a coding task\nID: ${input.item.id}\nTitle: ${input.item.title}\nDescription: ${input.item.description}`,
